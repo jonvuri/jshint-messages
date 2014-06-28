@@ -10,6 +10,10 @@ var sourcetrace = require( 'sourcetrace' )
 
 var jshintDir = process.argv[2]
 
+if ( !jshintDir ) {
+	throw new Error( 'Usage: jshint-messages [jshint dir]' )
+}
+
 var messages = require( path.join( jshintDir, 'src', 'messages' ) )
 
 
@@ -31,42 +35,39 @@ function e( callback ) {
 
 
 
-function formatTrace( trace, filename, fileLines ) {
+function done( files ) {
 
-	var githubUrl = 'https://github.com/jshint/jshint/blob/master/src/'
-	var lastline
-
-	function padLineNumber( line ) {
-		line = String( line )
-		return line + Array( 5 - line.length ).join( ' ' )
+	function process( message ) {
+		rimraf( message, e( function () {
+			fs.mkdir( message, e( function () {
+				_.each( messages[message], _.curry( writeMessage )( message )( files ) )
+			} ) )
+		} ) )
 	}
 
-	return '<pre>' + _.reduce( trace, function ( result, line ) {
-
-		if ( lastline && lastline !== line - 1 ) {
-			result += '…\n'
-		}
-
-		lastline = line
-
-		result += '<a href="' + githubUrl + filename + '#L' + line + '">'
-
-		result += padLineNumber( line ) + ': '
-
-		result += fileLines[ line - 1 ].replace( /\s+$/g, '' )
-
-		result += '</a>\n'
-
-		return result
-
-	}, '' ) + '</pre>\n'
+	process( 'errors' )
+	process( 'warnings' )
+	process( 'info' )
 
 }
 
 
-function formatMessage( files, message ) {
+function writeMessage( dir, files, message ) {
 
-	var traces = _.mapValues( files, function ( file, filename ) {
+	process.stdout.write( message.code + ' ' )
+
+	fs.writeFile( path.join( dir, message.code + '.md' ), processMessage( message, files ) )
+
+}
+
+
+function processMessage( message, files ) {
+
+	var traces
+	var fileLines
+	var options
+
+	traces = _.mapValues( files, function ( file, filename ) {
 
 		var fileTraces
 
@@ -81,9 +82,9 @@ function formatMessage( files, message ) {
 
 	} )
 
-	var fileLines = _.mapValues( files, function (file) { return file.split( '\n' ) } )
+	fileLines = _.mapValues( files, function (file) { return file.split( '\n' ) } )
 
-	var options = _.reduce( traces, function ( result, trace, filename ) {
+	options = _.reduce( traces, function ( result, trace, filename ) {
 
 		var lines = fileLines[filename]
 
@@ -108,6 +109,13 @@ function formatMessage( files, message ) {
 	}, [] )
 
 
+	return formatMessage( message, fileLines, options, traces )
+
+}
+
+
+function formatMessage( message, fileLines, options, traces ) {
+
 	var result = ''
 
 	result += '# ' + message.code + '\n\n'
@@ -131,7 +139,7 @@ function formatMessage( files, message ) {
 			return !_.isEmpty( trace )
 		} ).map( function ( trace, filename ) {
 			return '### ' + filename + '\n' + formatTrace( trace, filename, fileLines[filename] ) + '\n\n'
-		} ).join( '\n' )
+		} ).value().join( '\n' )
 
 	}
 
@@ -140,29 +148,42 @@ function formatMessage( files, message ) {
 }
 
 
+function formatTrace( trace, filename, fileLines ) {
 
-function processMessage( dir, files, message ) {
-
-	process.stdout.write( message.code + ' ' )
-
-	fs.writeFile( path.join( dir, message.code + '.md' ), formatMessage( files, message ) )
-
-}
+	var githubUrl = 'https://github.com/jshint/jshint/blob/master/src/'
+	var lastline
 
 
-function done( files ) {
+	function padLineNumber( line ) {
 
-	function process( message ) {
-		rimraf( message, e( function () {
-			fs.mkdir( message, e( function () {
-				_.each( messages[message], _.curry( processMessage )( message )( files ) )
-			} ) )
-		} ) )
+		var padLength = 4
+
+		line = String( line )
+
+		return line + Array( padLength - line.length + 1 ).join( ' ' )
+
 	}
 
-	process( 'errors' )
-	process( 'warnings' )
-	process( 'info' )
+
+	return '<pre>' + _.reduce( trace, function ( result, line ) {
+
+		if ( lastline && lastline !== line - 1 ) {
+			result += '…\n'
+		}
+
+		lastline = line
+
+		result += '<a href="' + githubUrl + filename + '#L' + line + '">'
+
+		result += padLineNumber( line ) + ': '
+
+		result += fileLines[ line - 1 ].replace( /\s+$/g, '' )
+
+		result += '</a>\n'
+
+		return result
+
+	}, '' ) + '</pre>\n'
 
 }
 
@@ -180,9 +201,9 @@ fs.readdir( path.join( jshintDir, 'src' ), e( function ( filepaths ) {
 
 	_.each( filepaths, function ( file ) {
 
-		fs.readFile( path.join( jshintDir, 'src', file ), 'utf8', e( function ( filestring ) {
+		fs.readFile( path.join( jshintDir, 'src', file ), 'utf8', e( function ( contents ) {
 
-			files[ file ] = filestring
+			files[ file ] = contents
 
 			doneFn( files )
 
