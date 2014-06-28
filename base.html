@@ -1,0 +1,31 @@
+{{# message }}
+# {{ code }}
+
+###### {{ desc }}{{^ desc }}*Retired message - No description*{{/ desc }}
+{{/ message }}
+
+## Affecting options
+
+{{# options }}
+<a href="http://www.jshint.com/docs/options/#{{.}}">{{.}}</a>
+{{/ options }}
+{{^ options }}
+*None*
+{{/ options }}
+
+## Source
+
+{{# traces }}
+{{# . }}
+### {{ filename }}
+<pre>
+{{# trace }}
+{{^ continuous }}
+…
+{{/ continuous }}
+<a href="https://github.com/jshint/jshint/blob/master/src/{{ filename }}#L{{ lineNumber }}">{{ paddedLineNumber }}: {{ lineText }}</a>
+{{/ trace }}
+</pre>
+{{/ . }}
+
+{{/ traces }}

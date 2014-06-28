@@ -1,6 +1,4 @@
-errors
-warnings
-info
+out
 
 
 # Logs
@@ -20,9 +18,6 @@ lib-cov
 
 # Coverage output dir
 build
-
-# Mocha output htmls
-*.html
 
 # Dependency directory
 # Deployed apps should consider commenting this line out:

@@ -4,6 +4,7 @@ var fs = require( 'fs' )
 var path = require( 'path' )
 
 var _ = require( 'lodash' )
+var mustache = require( 'mustache' )
 var rimraf = require( 'rimraf' )
 var sourcetrace = require( 'sourcetrace' )
 
@@ -15,6 +16,8 @@ if ( !jshintDir ) {
 }
 
 var messages = require( path.join( jshintDir, 'src', 'messages' ) )
+
+var base = fs.readFileSync( 'base.html', 'utf8' )
 
 
 
@@ -67,7 +70,7 @@ function processMessage( message, files ) {
 	var fileLines
 	var options
 
-	traces = _.mapValues( files, function ( file, filename ) {
+	traces = _.map( files, function ( file, filename ) {
 
 		var fileTraces
 
@@ -78,17 +81,26 @@ function processMessage( message, files ) {
 			throw e
 		}
 
-		return _.uniq( _.flatten( fileTraces ) )
+
+		function num( a, b ) {
+			return a - b
+		}
+
+		return {
+			trace: _.uniq( _.flatten( fileTraces ).sort( num ), true ),
+			filename: filename
+		}
 
 	} )
 
 	fileLines = _.mapValues( files, function (file) { return file.split( '\n' ) } )
 
-	options = _.reduce( traces, function ( result, trace, filename ) {
+	options = _.reduce( traces, function ( result, trace ) {
 
+		var filename = trace.filename
 		var lines = fileLines[filename]
 
-		_.each( trace, function ( line ) {
+		_.each( trace.trace, function ( line ) {
 
 			var fileLine = lines[ line - 1 ]
 			var optionRegex = /state\.option\.([a-zA-Z_$][0-9a-zA-Z_$]*)/g
@@ -109,50 +121,12 @@ function processMessage( message, files ) {
 	}, [] )
 
 
-	return formatMessage( message, fileLines, options, traces )
+	return template( message, fileLines, options, traces )
 
 }
 
 
-function formatMessage( message, fileLines, options, traces ) {
-
-	var result = ''
-
-	result += '# ' + message.code + '\n\n'
-
-	result += '###### ' + ( message.desc || '*Retired message - No description*' ) + '\n\n'
-
-	if ( options.length ) {
-
-		result += '## Affecting options\n\n'
-
-		result += _.map( options, function ( option ) {
-			return '<a href="http://www.jshint.com/docs/options/#' + option + '">' + option + '</a>'
-		} ).join( '\n' ) + '\n\n'
-	}
-
-	if ( _.any( traces, function ( trace ) { return !_.isEmpty( trace ) } ) ) {
-
-		result += '## Source\n\n'
-
-		result += _( traces ).pick( function ( trace ) {
-			return !_.isEmpty( trace )
-		} ).map( function ( trace, filename ) {
-			return '### ' + filename + '\n' + formatTrace( trace, filename, fileLines[filename] ) + '\n\n'
-		} ).value().join( '\n' )
-
-	}
-
-	return result
-
-}
-
-
-function formatTrace( trace, filename, fileLines ) {
-
-	var githubUrl = 'https://github.com/jshint/jshint/blob/master/src/'
-	var lastline
-
+function template( message, fileLines, options, traces ) {
 
 	function padLineNumber( line ) {
 
@@ -164,26 +138,44 @@ function formatTrace( trace, filename, fileLines ) {
 
 	}
 
+	return mustache.render( base, {
+		message: message,
+		fileLines: fileLines,
+		options: options,
+		traces: _(traces).map( function ( trace ) {
 
-	return '<pre>' + _.reduce( trace, function ( result, line ) {
+			var lines = fileLines[ trace.filename ]
 
-		if ( lastline && lastline !== line - 1 ) {
-			result += '…\n'
-		}
+			var lastline = null
 
-		lastline = line
+			return {
+				trace: _.map( trace.trace, function ( line ) {
 
-		result += '<a href="' + githubUrl + filename + '#L' + line + '">'
+					var cont
 
-		result += padLineNumber( line ) + ': '
+					if ( lastline ) {
+						cont = line === lastline + 1
+					} else {
+						cont = true
+					}
 
-		result += fileLines[ line - 1 ].replace( /\s+$/g, '' )
+					lastline = line
 
-		result += '</a>\n'
+					return {
+						continuous: cont,
+						lineNumber: line,
+						paddedLineNumber: padLineNumber( line ),
+						lineText: lines[ line - 1 ].replace( /\s+$/g, '' )
+					}
 
-		return result
+				} ),
+				filename: trace.filename
+			}
 
-	}, '' ) + '</pre>\n'
+		} ).filter( function ( trace ) {
+			return !_.isEmpty( trace.trace )
+		} ).value()
+	} )
 
 }
 
