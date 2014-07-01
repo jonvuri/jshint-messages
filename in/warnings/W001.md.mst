@@ -1,0 +1,18 @@
+This warning will appear when you attempt to assign to an object property named "hasOwnProperty":
+
+```js
+object.hasOwnProperty = function () { }
+```
+
+```js
+object['hasOwnProperty'] = null
+```
+
+It will also appear when you try to define an ES6 getter or setter with that name:
+
+```js
+class foo {
+	get hasOwnProperty() {
+	}
+}
+```
