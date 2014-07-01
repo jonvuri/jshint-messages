@@ -3,6 +3,7 @@
 var fs = require( 'fs' )
 var path = require( 'path' )
 
+var async = require( 'async' )
 var _ = require( 'lodash' )
 var mustache = require( 'mustache' )
 var rimraf = require( 'rimraf' )
@@ -17,54 +18,21 @@ if ( !jshintDir ) {
 
 var messages = require( path.join( jshintDir, 'src', 'messages' ) )
 
-var base = fs.readFileSync( 'base.html', 'utf8' )
+var base = fs.readFileSync( 'base.md.mst', 'utf8' )
 
 
 
-// For async funcs, throw any error or continue with callback
-function e( callback ) {
 
-	return function ( err ) {
-
-		if ( err ) {
-			throw err
-		} else {
-			callback.apply( this, _.tail( arguments ) )
-		}
-
-	}
-
-}
-
-
-
-function done( files ) {
-
-	function process( message ) {
-		rimraf( message, e( function () {
-			fs.mkdir( message, e( function () {
-				_.each( messages[message], _.curry( writeMessage )( message )( files ) )
-			} ) )
-		} ) )
-	}
-
-	process( 'errors' )
-	process( 'warnings' )
-	process( 'info' )
-
-}
-
-
-function writeMessage( dir, files, message ) {
+function writeMessage( dir, files, templates, message ) {
 
 	process.stdout.write( message.code + ' ' )
 
-	fs.writeFile( path.join( dir, message.code + '.md' ), processMessage( message, files ) )
+	fs.writeFile( path.join( 'out', dir, message.code + '.md' ), processMessage( message, files, templates[ message.code ] ) )
 
 }
 
 
-function processMessage( message, files ) {
+function processMessage( message, files, template ) {
 
 	var traces
 	var fileLines
@@ -121,12 +89,12 @@ function processMessage( message, files ) {
 	}, [] )
 
 
-	return template( message, fileLines, options, traces )
+	return render( message, fileLines, options, traces, template )
 
 }
 
 
-function template( message, fileLines, options, traces ) {
+function render( message, fileLines, options, traces, template ) {
 
 	function padLineNumber( line ) {
 
@@ -175,35 +143,107 @@ function template( message, fileLines, options, traces ) {
 		} ).filter( function ( trace ) {
 			return !_.isEmpty( trace.trace )
 		} ).value()
+	}, {
+		content: template
 	} )
 
 }
 
 
 
-fs.readdir( path.join( jshintDir, 'src' ), e( function ( filepaths ) {
 
-	filepaths = _.filter( filepaths, function ( file ) {
-		return path.extname( file ) === '.js' && path.basename( file ) !== 'messages.js'
-	} )
+async.auto( {
 
-	var files = {}
+	'jshint-src-paths': function ( cb ) {
 
-	var doneFn = _.after( filepaths.length, done )
+		fs.readdir( path.join( jshintDir, 'src' ), function ( err, filepaths ) {
+			cb( null, _.filter( filepaths, function ( filepath ) {
+				return path.extname( filepath ) === '.js' && path.basename( filepath ) !== 'messages.js'
+			} ) )
+		} )
 
-	_.each( filepaths, function ( file ) {
+	},
 
-		fs.readFile( path.join( jshintDir, 'src', file ), 'utf8', e( function ( contents ) {
+	'jshint-src-files': [ 'jshint-src-paths', function ( cb, results ) {
 
-			files[ file ] = contents
+		async.map( results['jshint-src-paths'], function ( filepath, mapcb ) {
 
-			doneFn( files )
+			fs.readFile( path.join( jshintDir, 'src', filepath ), 'utf8', function ( err, file ) {
+				mapcb( err, [ filepath, file ] )
+			} )
 
-		} ) )
+		}, function ( err, results ) {
+			cb( err, _.object( results ) )
+		} )
 
-	} )
+	} ],
 
-} ) )
+	'delete-out-dir': function ( cb ) {
+		rimraf( 'out', cb )
+	},
+
+	'make-out-dir': [ 'delete-out-dir', function ( cb ) {
+		fs.mkdir( path.join( 'out' ), cb )
+	} ],
+
+	'make-out-subdirs': [ 'make-out-dir', function ( cb ) {
+
+		function mkdir( type ) {
+			return function ( parcb ) {
+				fs.mkdir( path.join( 'out', type ), parcb )
+			}
+		}
+
+		async.parallel( [ mkdir( 'errors' ), mkdir( 'warnings' ), mkdir( 'info' ) ], cb )
+
+	} ],
+
+	'code-templates': function ( cb ) {
+
+		var templates = []
+
+		function add( type ) { 
+
+			_.each( messages[ type ], function ( message ) {
+
+				templates.push( [
+					message.code,
+					path.join( 'in', type, message.code + '.md.mst' )
+				] )
+
+			} )
+
+		}
+
+		add( 'errors' )
+		add( 'warnings' )
+		add( 'info' )
+
+		async.map( templates, function ( template, mapcb ) {
+			fs.readFile( template[ 1 ], 'utf8', function ( err, contents ) {
+				mapcb( null, [ template[ 0 ], contents ] )
+			} )
+		}, function ( err, results ) {
+			cb( null, _.object( results ) )
+		} )
+
+	}
+
+}, function ( err, results ) {
+
+	var files = results[ 'jshint-src-files' ]
+	var templates = results[ 'code-templates' ]
+
+	function go( type ) {
+		_.each( messages[ type ], _.curry( writeMessage )( type, files, templates ) )
+	}
+
+	go( 'errors' )
+	go( 'warnings' )
+	go( 'info' )
+
+} )
+
 
 
 

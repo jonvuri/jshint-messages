@@ -4,6 +4,8 @@
 ###### {{ desc }}{{^ desc }}*Retired message - No description*{{/ desc }}
 {{/ message }}
 
+{{> content }}
+
 ## Affecting options
 
 {{# options }}
