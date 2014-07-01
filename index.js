@@ -63,7 +63,7 @@ function processMessage( message, files, template ) {
 
 	fileLines = _.mapValues( files, function (file) { return file.split( '\n' ) } )
 
-	options = _.reduce( traces, function ( result, trace ) {
+	options = _.uniq( _.reduce( traces, function ( result, trace ) {
 
 		var filename = trace.filename
 		var lines = fileLines[filename]
@@ -86,7 +86,7 @@ function processMessage( message, files, template ) {
 
 		return result
 
-	}, [] )
+	}, [] ) )
 
 
 	return render( message, fileLines, options, traces, template )
