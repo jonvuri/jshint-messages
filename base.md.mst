@@ -31,3 +31,6 @@
 {{/ . }}
 
 {{/ traces }}
+{{^ traces }}
+*This message is not being used.*
+{{/ traces }}
