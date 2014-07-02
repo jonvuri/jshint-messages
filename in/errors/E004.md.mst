@@ -1,0 +1,10 @@
+This error appears when the jshint function is called with input it doesn't expect. The command line program will never trigger this error since it guards the jshint function; it only appears when you are calling the jshint function directly. Note that it is still a jshint error and not a thrown JavaScript error.
+
+```js
+var jshint = require( 'jshint' ).JSHINT
+
+jshint( 1 )
+
+jshint.errors[0].code => 'E004'
+jshint.errors[0].reason => 'Input is neither a string nor an array of strings.'
+```

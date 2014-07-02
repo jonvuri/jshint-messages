@@ -1,0 +1,9 @@
+This error appears when a top-level function is missing a `"use strict"` statement.
+
+```js
+/* jshint strict:true */
+function foo() {
+	// "use strict";
+	bar();
+}
+```

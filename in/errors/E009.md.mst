@@ -1,0 +1,8 @@
+This error appears if you use option [validthis](http://www.jshint.com/docs/options/#validthis) outside of a function scope. You can only use it like this:
+
+```js
+function foo() {
+	/* jshint validthis: true */
+	this.bar()
+}
+```

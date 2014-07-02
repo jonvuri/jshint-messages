@@ -1,0 +1,1 @@
+This error appears when you access `arguments.caller` or `arguments.callee` while in strict mode.
