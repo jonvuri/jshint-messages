@@ -71,7 +71,9 @@ function processMessage( message, files, template ) {
 
 	} )
 
-	fileLines = _.mapValues( files, function (file) { return file.split( '\n' ) } )
+	fileLines = _.mapValues( files, function (file) {
+		return file.split( '\n' )
+	} )
 
 	options = _.uniq( _.reduce( traces, function ( result, trace ) {
 
@@ -167,7 +169,7 @@ async.auto( {
 	'jshint-src-paths': function ( cb ) {
 
 		fs.readdir( path.join( jshintDir, 'src' ), function ( err, filepaths ) {
-			cb( null, _.filter( filepaths, function ( filepath ) {
+			cb( err, _.filter( filepaths, function ( filepath ) {
 				return path.extname( filepath ) === '.js' && path.basename( filepath ) !== 'messages.js'
 			} ) )
 		} )
@@ -229,17 +231,25 @@ async.auto( {
 		add( 'warnings' )
 		add( 'info' )
 
+
 		async.map( templates, function ( template, mapcb ) {
+			/* eslint-disable handle-callback-err */
+			/* It's not a problem if these don't exist */
 			fs.readFile( template[ 1 ], 'utf8', function ( err, contents ) {
 				mapcb( null, [ template[ 0 ], contents ] )
 			} )
+			/* eslint-enable handle-callback-err */
 		}, function ( err, results ) {
-			cb( null, _.object( results ) )
+			cb( err, _.object( results ) )
 		} )
 
 	}
 
 }, function ( err, results ) {
+
+	if ( err ) {
+		throw err
+	}
 
 	var files = results[ 'jshint-src-files' ]
 	var templates = results[ 'code-templates' ]
