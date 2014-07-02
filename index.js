@@ -38,6 +38,16 @@ function processMessage( message, files, template ) {
 	var fileLines
 	var options
 
+
+	function normalizeOption( option ) {
+
+		if ( option.indexOf( 'in' ) === 0 && option !== 'indent' ) {
+			return option.slice( 2 ).toLowerCase()
+		}
+
+	}
+
+
 	traces = _.map( files, function ( file, filename ) {
 
 		var fileTraces
@@ -77,7 +87,7 @@ function processMessage( message, files, template ) {
 			if ( _.contains( fileLine, 'state.option' ) ) {
 
 				while ( ( regexResult = optionRegex.exec( fileLine ) ) !== null ) {
-					result.push( regexResult[1] )
+					result.push( normalizeOption( regexResult[1] ) )
 				}
 
 			}
