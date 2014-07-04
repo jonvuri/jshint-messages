@@ -1,0 +1,7 @@
+```js
+const foo = 1
+
+foo = 2
+```
+
+[`const` on MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/const)

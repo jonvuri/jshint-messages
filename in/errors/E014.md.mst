@@ -1,0 +1,5 @@
+This error appears when you use the `/=` operator as an initializer.
+
+```js
+var foo /= 4
+```
