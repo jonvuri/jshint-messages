@@ -53,10 +53,14 @@ function processMessage( message, files, template ) {
 		var fileTraces
 
 		try {
+
 			fileTraces = sourcetrace( '"' + message.code + '"', file )
+
 		} catch (e) {
+
 			e.message = 'Error tracing ' + filename + ':\n' + e.message
 			throw e
+
 		}
 
 
@@ -71,7 +75,7 @@ function processMessage( message, files, template ) {
 
 	} )
 
-	fileLines = _.mapValues( files, function (file) {
+	fileLines = _.mapValues( files, function ( file ) {
 		return file.split( '\n' )
 	} )
 
@@ -169,9 +173,11 @@ async.auto( {
 	'jshint-src-paths': function ( cb ) {
 
 		fs.readdir( path.join( jshintDir, 'src' ), function ( err, filepaths ) {
+
 			cb( err, _.filter( filepaths, function ( filepath ) {
 				return path.extname( filepath ) === '.js' && path.basename( filepath ) !== 'messages.js'
 			} ) )
+
 		} )
 
 	},
