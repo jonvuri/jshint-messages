@@ -1,1 +1,3 @@
+*JSHint configuration error*
+
 Indicates a bad value in the inline configuration for an option that takes string values, such as [latedef](http://www.jshint.com/docs/options/#latedef) or [unused](http://www.jshint.com/docs/options/#unused). This error only appears for inline configuration (`/* jshint unused:pineapple */`), not for external file configs.

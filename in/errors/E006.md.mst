@@ -1,3 +1,5 @@
+*JavaScript syntax error*
+
 This error appears when the input file comes to an end in the middle of an expression or statement.
 
 ```js

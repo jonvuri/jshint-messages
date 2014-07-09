@@ -1,3 +1,5 @@
+*JSON syntax error*
+
 This error only appears when jshint is being run on a JSON file. It means there is a value that isn't a valid JSON value:
 
 ```json

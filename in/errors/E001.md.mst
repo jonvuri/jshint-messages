@@ -1,1 +1,3 @@
+*JSHint configuration error*
+
 This error appears when you pass in an option that jshint doesn't recognize.
