@@ -1,0 +1,7 @@
+*JavaScript syntax error*
+
+Catch-all error for unmatched tokens not covered by other errors, if the end of the file is encountered before the expected match.
+
+```js
+var x = ( 1 + 2
+```

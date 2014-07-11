@@ -1,0 +1,8 @@
+*JavaScript syntax error*
+
+```js
+switch ("foo") {
+	case "bar"  // Missing ':' on a case clause.
+		break;
+}
+```

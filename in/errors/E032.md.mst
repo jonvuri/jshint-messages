@@ -1,0 +1,11 @@
+*JSHint configuration error*
+
+This error appears when you pass something other than `false` or a positive integer as a value for one of the numeric options:
+
+* indent
+* maxcomplexity
+* maxdepth
+* maxerr
+* maxlen
+* maxparams
+* maxstatements

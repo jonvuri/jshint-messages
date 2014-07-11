@@ -1,0 +1,8 @@
+*JSON syntax error*
+
+This error appears if a JSON file cuts off in the middle of an inner array.
+
+```json
+{
+	"foo": [
+```

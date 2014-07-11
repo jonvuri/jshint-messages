@@ -1,0 +1,7 @@
+*JavaScript syntax error*
+
+This error appears when the closing `}` is omitted in a switch-case statement:
+
+```js
+switch ("foo") {  // Missing '}'.
+```

@@ -1,0 +1,7 @@
+*JavaScript syntax error*
+
+Catch-all error for unmatched tokens not covered by other errors, if another token is encountered that could not precede the expected match.
+
+```js
+var x = ( 1 + 2;  // Expected ')' to match '(' from line 1 and instead saw ';'.
+```

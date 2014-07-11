@@ -1,0 +1,6 @@
+Indicates a likely error involving a line break.
+
+```js
+return
+ { foo: "bar" }  // Line breaking error 'return'.
+```

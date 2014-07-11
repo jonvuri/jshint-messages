@@ -1,0 +1,10 @@
+*JavaScript error*
+
+This error appears for assignments that might be syntactically correct but will throw runtime errors.
+
+```js
+function foo() {
+	"use strict";
+	arguments = {};
+}
+```

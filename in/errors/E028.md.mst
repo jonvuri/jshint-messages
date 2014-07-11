@@ -1,0 +1,15 @@
+*JSON syntax error*
+
+This error appears when there is an extra comma at the front of an object or array.
+
+```json
+{
+	"foo": [ , "bar" ]
+}
+```
+
+```json
+{
+	"foo": { , "bar": "baz" }
+}
+```

@@ -1,0 +1,13 @@
+*JavaScript syntax error*
+
+This error appears when the identifier is omitted in a statement that requires one.
+
+```js
+var;
+```
+
+```js
+try {
+} catch () {
+}
+```

@@ -1,0 +1,7 @@
+*JavaScript syntax error*
+
+Many types of errors use this generic message.
+
+```js
+(1 + 2), if (true) {}  // Unexpected 'if'.
+```
