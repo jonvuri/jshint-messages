@@ -42,49 +42,89 @@ function processMessage( message, files, template ) {
 	function normalizeOption( option ) {
 
 		if ( option.indexOf( 'in' ) === 0 && option !== 'indent' ) {
-			return option.slice( 2 ).toLowerCase()
+			option = option.slice( 2 ).toLowerCase()
 		}
+
+		if ( option === 'es5' ) {
+			option = 'es3'
+		}
+
+		return option
 
 	}
 
 
-	traces = _.map( files, function ( file, filename ) {
-
-		var fileTraces
-
-		try {
-
-			fileTraces = sourcetrace( '"' + message.code + '"', file )
-
-		} catch (e) {
-
-			e.message = 'Error tracing ' + filename + ':\n' + e.message
-			throw e
-
-		}
-
-
-		function num( a, b ) {
-			return a - b
-		}
-
-		return {
-			trace: _.uniq( _.flatten( fileTraces ).sort( num ), true ),
-			filename: filename
-		}
-
-	} )
 
 	fileLines = _.mapValues( files, function ( file ) {
 		return file.split( '\n' )
 	} )
 
+
+	traces = _.map( files, function ( file, filename ) {
+
+		var lastline = null
+		var messagelines = []
+
+
+		// Array of arrays, source lines leading to message usage: [ [ 1, 3, 5 ] ]
+		var lines = sourcetrace( '"' + message.code + '"', file )
+
+
+		_.each( lines, function ( trace ) {
+
+			if ( trace.length ) {
+				messagelines.push( trace[ trace.length - 1 ] )
+			}
+
+		} )
+
+		messagelines = _.sortBy( messagelines, _.identity )
+
+
+		lines = _( lines )
+			.flatten()
+			.sortBy( _.identity )
+			.uniq( true )
+			.map( function ( line, index, lines ) {
+
+				var continuous
+
+				if ( lastline ) {
+					continuous = line === lastline + 1
+				} else {
+					continuous = true
+				}
+
+				lastline = line
+
+				return {
+					continuous: continuous,
+					lineNumber: line,
+					paddedLineNumber: String( line ) + Array( 5 - String( line ).length ).join( ' ' ),
+					lineText: fileLines[ filename ][ line - 1 ].replace( /\s+$/g, '' ),
+					messageLine: _.indexOf( messagelines, line, true ) !== -1
+				}
+
+			} )
+			.value()
+
+
+		return {
+			traceLines: lines,
+			filename: filename
+		}
+
+	} ).filter( function ( trace ) {
+		return !_.isEmpty( trace.traceLines )
+	} )
+
+
 	options = _.uniq( _.reduce( traces, function ( result, trace ) {
 
 		var filename = trace.filename
-		var lines = fileLines[filename]
+		var lines = fileLines[ filename ]
 
-		_.each( trace.trace, function ( line ) {
+		_.each( trace.traceLines, function ( line ) {
 
 			var fileLine = lines[ line - 1 ]
 			var optionRegex = /state\.option\.([a-zA-Z_$][0-9a-zA-Z_$]*)/g
@@ -105,60 +145,11 @@ function processMessage( message, files, template ) {
 	}, [] ) )
 
 
-	return render( message, fileLines, options, traces, template )
-
-}
-
-
-function render( message, fileLines, options, traces, template ) {
-
-	function padLineNumber( line ) {
-
-		var padLength = 4
-
-		line = String( line )
-
-		return line + Array( padLength - line.length + 1 ).join( ' ' )
-
-	}
-
 	return mustache.render( base, {
 		message: message,
 		fileLines: fileLines,
 		options: options,
-		traces: _(traces).map( function ( trace ) {
-
-			var lines = fileLines[ trace.filename ]
-
-			var lastline = null
-
-			return {
-				trace: _.map( trace.trace, function ( line ) {
-
-					var cont
-
-					if ( lastline ) {
-						cont = line === lastline + 1
-					} else {
-						cont = true
-					}
-
-					lastline = line
-
-					return {
-						continuous: cont,
-						lineNumber: line,
-						paddedLineNumber: padLineNumber( line ),
-						lineText: lines[ line - 1 ].replace( /\s+$/g, '' )
-					}
-
-				} ),
-				filename: trace.filename
-			}
-
-		} ).filter( function ( trace ) {
-			return !_.isEmpty( trace.trace )
-		} ).value()
+		traces: traces
 	}, {
 		content: template
 	} )

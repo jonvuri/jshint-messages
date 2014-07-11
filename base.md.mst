@@ -21,16 +21,17 @@
 {{# . }}
 ### {{ filename }}
 <pre>
-{{# trace }}
+{{# traceLines }}
 {{^ continuous }}
 …
 {{/ continuous }}
-<a href="https://github.com/jshint/jshint/blob/master/src/{{ filename }}#L{{ lineNumber }}">{{ paddedLineNumber }}: {{ lineText }}</a>
-{{/ trace }}
+{{# messageLine }}<b>{{/ messageLine }}<a href="https://github.com/jshint/jshint/blob/master/src/{{ filename }}#L{{ lineNumber }}">{{ paddedLineNumber }}: {{ lineText }}</a>{{# messageLine }}</b>{{/ messageLine }}
+{{/ traceLines }}
 </pre>
 {{/ . }}
 
 {{/ traces }}
 {{^ traces }}
 *This message is not being used.*
+
 {{/ traces }}
